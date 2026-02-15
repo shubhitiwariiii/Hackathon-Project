@@ -1,8 +1,7 @@
 <div align="center">
 
-<img src="assets/notiq-logo.png" alt="Notiq AI Logo" width="400"/>
 
-# Notiq AI
+<img width="500" height="500" alt="ChatGPT Image Feb 15, 2026, 01_03_48 PM" src="https://github.com/user-attachments/assets/cf74bec5-735c-4eac-84ab-437c416fb615" />
 
 ### Your AI-Powered Smart Notes Engine
 
