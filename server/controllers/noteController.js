@@ -7,7 +7,7 @@ import streamifier from "streamifier";
 
 // Create Note
 const createNote = asyncHandler(async (req, res) => {
-  const { title, content, category, topic, difficulty, tags, } = req.body;
+  const { title, content, category, topic, difficulty, tags, isFavorite, color } = req.body;
 
   if (!title || !content) {
     res.status(400);
@@ -22,6 +22,8 @@ const createNote = asyncHandler(async (req, res) => {
     topic,
     difficulty,
     tags,
+    isFavorite: isFavorite || false,
+    color: color || "default",
   });
 
   res.status(201).json(note);
@@ -40,7 +42,7 @@ const getNotes = asyncHandler(async (req, res) => {
 // Update Note
 
 const updateNote = asyncHandler(async (req, res) => {
-  const { title, content, category, topic, difficulty, tags } = req.body;
+  const { title, content, category, topic, difficulty, tags, isFavorite, color } = req.body;
 
   const note = await Note.findById(req.params.id);
 
@@ -62,6 +64,8 @@ const updateNote = asyncHandler(async (req, res) => {
   if (topic !== undefined) note.topic = topic;
   if (difficulty !== undefined) note.difficulty = difficulty;
   if (tags !== undefined) note.tags = tags;
+  if (isFavorite !== undefined) note.isFavorite = isFavorite;
+  if (color !== undefined) note.color = color;
 
   const updatedNote = await note.save();
 

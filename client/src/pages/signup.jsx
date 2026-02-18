@@ -1,17 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  HiOutlineMail,
-  HiOutlineLockClosed,
-  HiOutlineEye,
-  HiOutlineEyeOff,
-  HiOutlineCheckCircle,
-  HiOutlineExclamationCircle,
-  HiOutlineBookOpen,
-  HiOutlinePencil,
-  HiOutlineSparkles,
-  HiOutlineArrowRight,
-} from "react-icons/hi";
+import { HiOutlineMail, HiOutlineLockClosed, HiOutlineEye, HiOutlineEyeOff, HiOutlineCheck } from "react-icons/hi";
+import { FcGoogle } from "react-icons/fc";
+import { FaGithub } from "react-icons/fa";
 import API from "../api/axios";
 import "../styles/signup.css";
 
@@ -23,46 +14,54 @@ function Signup() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [focusedField, setFocusedField] = useState(null);
-
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const stars = document.querySelectorAll(".star");
+    stars.forEach((star, i) => {
+      star.style.animationDelay = `${i * 0.1}s`;
+    });
+  }, []);
+
   const getPasswordStrength = (pass) => {
-    if (!pass) return { level: 0, label: "", className: "" };
+    if (!pass) return 0;
     let score = 0;
     if (pass.length >= 6) score++;
     if (pass.length >= 10) score++;
     if (/[A-Z]/.test(pass)) score++;
     if (/[0-9]/.test(pass)) score++;
     if (/[^A-Za-z0-9]/.test(pass)) score++;
-    if (score <= 2) return { level: 2, label: "Weak", className: "weak" };
-    if (score <= 3) return { level: 3, label: "Medium", className: "medium" };
-    return { level: 5, label: "Strong", className: "strong" };
+    return score;
   };
 
   const strength = getPasswordStrength(password);
+  const strengthLabels = ["", "Weak", "Fair", "Good", "Strong", "Excellent"];
+  const strengthColors = ["", "#ef4444", "#f97316", "#eab308", "#22c55e", "#10b981"];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
     if (!email || !password || !confirmPassword) {
       setError("All fields are required");
       return;
     }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
+
     if (password.length < 6) {
       setError("Password must be at least 6 characters");
       return;
     }
+
     try {
       setLoading(true);
-      const res = await API.post("/auth/signup", { email, password });
-      setSuccess(true);
-      setTimeout(() => navigate("/login"), 1500);
+      await API.post("/auth/signup", { email, password });
+      localStorage.setItem("userEmail", email);
+      navigate("/login");
     } catch (err) {
       setError(err.response?.data?.message || "Signup failed. Please try again.");
     } finally {
@@ -70,217 +69,182 @@ function Signup() {
     }
   };
 
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:3000/api/auth/google";
+  };
+
+  const handleGitHubLogin = () => {
+    window.location.href = "http://localhost:3000/api/auth/github";
+  };
+
   return (
-    <div className="signup-page">
-      {/* Floating decorative elements */}
-      <div className="floating-element notebook-left" aria-hidden="true">
-        <div className="notebook-spine"></div>
-        <div className="notebook-pages"></div>
+    <div className="auth-page signup-page">
+      {/* Cosmic Background */}
+      <div className="cosmic-bg">
+        <div className="planet planet-1"></div>
+        <div className="planet planet-2"></div>
+        <div className="planet planet-3"></div>
+        <div className="shooting-star shooting-star-1"></div>
+        <div className="shooting-star shooting-star-2"></div>
+        <div className="shooting-star shooting-star-3"></div>
+        <div className="stars-container">
+          {[...Array(50)].map((_, i) => (
+            <div key={i} className="star"></div>
+          ))}
+        </div>
+        <div className="nebula"></div>
       </div>
-      <div className="floating-element notebook-right" aria-hidden="true">
-        <div className="notebook-spine"></div>
-        <div className="notebook-pages"></div>
-      </div>
-      <div className="floating-element paper-stack" aria-hidden="true">
-        <div className="paper-line"></div>
-        <div className="paper-line"></div>
-        <div className="paper-line"></div>
-        <div className="paper-line"></div>
-      </div>
-      <div className="floating-element pencil" aria-hidden="true"></div>
 
-      <div className="signup-container">
-        {/* Left – Brand */}
-        <div className="signup-brand-section">
-          <div className="signup-brand-content">
-            <div className="brand-header">
-              <div className="brand-icon-wrapper">
-                <HiOutlineBookOpen className="brand-icon" />
+      <div className="auth-container">
+        {/* Left Side - Brand Message */}
+        <div className="brand-side">
+          <div className="brand-content">
+            <div className="logo">
+              <div className="logo-icon">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M12 18V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M9 15L12 12L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </div>
-              <h1 className="signup-brand-name">Notiq AI</h1>
+              <span className="logo-text">Notiq AI</span>
             </div>
-            
-            <div className="illustration-wrapper">
-              <div className="open-book-illustration">
-                <div className="book-page left">
-                  <div className="text-line"></div>
-                  <div className="text-line"></div>
-                  <div className="text-line"></div>
-                  <div className="text-line"></div>
-                </div>
-                <div className="book-page right">
-                  <div className="text-line"></div>
-                  <div className="text-line"></div>
-                  <div className="text-line"></div>
-                  <div className="text-line"></div>
-                </div>
-                <div className="floating-pencil-icon">
-                  <HiOutlinePencil />
-                </div>
-              </div>
-            </div>
-
-            <h2 className="signup-tagline">Where Ideas Come to Life</h2>
-            <p className="signup-description">
-              AI-powered notes that understand, organize, and enhance your knowledge
+            <h1 className="brand-title">
+              START YOUR<br />
+              <span className="gradient-text">JOURNEY!</span>
+            </h1>
+            <p className="brand-tagline">
+              AI powered smart notes engine that understands, organizes and enhances your knowledge automatically.
             </p>
-            
-            <div className="signup-feature-list">
-              <div className="signup-feature-item">
-                <div className="feature-icon-box">
-                  <HiOutlineSparkles className="signup-feature-icon" />
-                </div>
-                <span>Smart Organization</span>
-              </div>
-              <div className="signup-feature-item">
-                <div className="feature-icon-box">
-                  <HiOutlinePencil className="signup-feature-icon" />
-                </div>
-                <span>AI Writing Assistant</span>
-              </div>
-              <div className="signup-feature-item">
-                <div className="feature-icon-box">
-                  <HiOutlineBookOpen className="signup-feature-icon" />
-                </div>
-                <span>Knowledge Library</span>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Right – Form card */}
-        <div className="signup-form-section">
-          <div className="signup-card">
-            <div className="signup-card-header">
-              <div className="card-icon-wrapper">
-                <HiOutlinePencil className="card-icon" />
-              </div>
-              <h2>Start Your Journey</h2>
-              <p>Create your account and begin writing smarter</p>
-            </div>
+        {/* Right Side - Form */}
+        <div className="form-side">
+          <div className="auth-card">
+            <h2 className="auth-title">SIGN UP</h2>
+            <p className="auth-subtitle">Create your account</p>
 
             {error && (
-              <div className="signup-error-message">
-                <HiOutlineExclamationCircle size={18} />
+              <div className="error-message">
                 {error}
               </div>
             )}
 
-            <form className="signup-form" onSubmit={handleSubmit}>
-              <div className={`signup-input-group ${focusedField === "email" ? "focused" : ""}`}>
-                <label htmlFor="signup-email">
-                  <HiOutlineMail className="signup-label-icon" />
-                  Email Address
-                </label>
-                <div className="signup-input-wrapper">
-                  <input
-                    id="signup-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onFocus={() => setFocusedField("email")}
-                    onBlur={() => setFocusedField(null)}
-                    autoComplete="email"
-                  />
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="input-group">
+                <div className="input-icon">
+                  <HiOutlineMail />
                 </div>
+                <input
+                  type="email"
+                  placeholder="youremail@gmail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="auth-input"
+                />
               </div>
 
-              <div className={`signup-input-group ${focusedField === "password" ? "focused" : ""}`}>
-                <label htmlFor="signup-password">
-                  <HiOutlineLockClosed className="signup-label-icon" />
-                  Password
-                </label>
-                <div className="signup-input-wrapper">
-                  <input
-                    id="signup-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Create a secure password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onFocus={() => setFocusedField("password")}
-                    onBlur={() => setFocusedField(null)}
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    className="signup-password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <HiOutlineEyeOff /> : <HiOutlineEye />}
-                  </button>
+              <div className="input-group">
+                <div className="input-icon">
+                  <HiOutlineLockClosed />
                 </div>
-                {password && (
-                  <div className="signup-strength-bar">
-                    {[1, 2, 3, 4, 5].map((seg) => (
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="auth-input"
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <HiOutlineEyeOff /> : <HiOutlineEye />}
+                </button>
+              </div>
+
+              {password && (
+                <div className="password-strength">
+                  <div className="strength-bar">
+                    {[1, 2, 3, 4, 5].map((level) => (
                       <div
-                        key={seg}
-                        className={`signup-strength-segment ${seg <= strength.level ? `active ${strength.className}` : ""}`}
-                      />
+                        key={level}
+                        className={`strength-segment ${level <= strength ? "active" : ""}`}
+                        style={{
+                          backgroundColor: level <= strength ? strengthColors[strength] : undefined
+                        }}
+                      ></div>
                     ))}
-                    <span className={`signup-strength-label ${strength.className}`}>{strength.label}</span>
                   </div>
-                )}
+                  <span className="strength-text" style={{ color: strengthColors[strength] }}>
+                    {strengthLabels[strength]}
+                  </span>
+                </div>
+              )}
+
+              <div className="input-group">
+                <div className="input-icon">
+                  <HiOutlineLockClosed />
+                </div>
+                <input
+                  type={showConfirm ? "text" : "password"}
+                  placeholder="Confirm password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="auth-input"
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                >
+                  {showConfirm ? <HiOutlineEyeOff /> : <HiOutlineEye />}
+                </button>
               </div>
 
-              <div className={`signup-input-group ${focusedField === "confirm" ? "focused" : ""}`}>
-                <label htmlFor="signup-confirm">
-                  <HiOutlineLockClosed className="signup-label-icon" />
-                  Confirm Password
-                </label>
-                <div className="signup-input-wrapper">
-                  <input
-                    id="signup-confirm"
-                    type={showConfirm ? "text" : "password"}
-                    placeholder="Repeat your password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    onFocus={() => setFocusedField("confirm")}
-                    onBlur={() => setFocusedField(null)}
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    className="signup-password-toggle"
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    tabIndex={-1}
-                    aria-label={showConfirm ? "Hide password" : "Show password"}
-                  >
-                    {showConfirm ? <HiOutlineEyeOff /> : <HiOutlineEye />}
-                  </button>
+              {confirmPassword && password === confirmPassword && (
+                <div className="password-match">
+                  <HiOutlineCheck className="match-icon" />
+                  <span>Passwords match</span>
                 </div>
-              </div>
+              )}
 
               <button
                 type="submit"
-                className="signup-submit-btn"
-                disabled={loading || success}
+                className="auth-btn"
+                disabled={loading}
               >
-                <span className="signup-btn-content">
-                  {loading ? (
-                    <div className="signup-spinner" />
-                  ) : success ? (
-                    <span className="signup-success-check">
-                      <HiOutlineCheckCircle size={20} /> Account Created!
-                    </span>
-                  ) : (
-                    <>
-                      Create Account
-                      <HiOutlineArrowRight className="signup-btn-arrow" />
-                    </>
-                  )}
-                </span>
+                {loading ? (
+                  <span className="btn-spinner"></span>
+                ) : (
+                  "Sign Up"
+                )}
               </button>
             </form>
 
-            <div className="signup-divider">
-              <span>or</span>
+            <div className="divider">
+              <span>Or continue with</span>
             </div>
 
-            <p className="signup-login-link">
-              Already have an account? <Link to="/login">Sign in</Link>
+            <div className="social-login">
+              <button className="social-btn google" onClick={handleGoogleLogin}>
+                <FcGoogle className="social-icon" />
+                <span>Google</span>
+              </button>
+              <button className="social-btn github" onClick={handleGitHubLogin}>
+                <FaGithub className="social-icon" />
+                <span>GitHub</span>
+              </button>
+            </div>
+
+            <p className="auth-footer">
+              Already have an account?{" "}
+              <Link to="/login" className="auth-link">
+                Sign in
+              </Link>
             </p>
           </div>
         </div>

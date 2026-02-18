@@ -64,6 +64,7 @@ function Dashboard() {
     const [sortBy, setSortBy] = useState("newest");
     const [hoveredNote, setHoveredNote] = useState(null);
     const [focusedField, setFocusedField] = useState(null);
+    const [selectedTags, setSelectedTags] = useState([]);
 
     const navigate = useNavigate();
     const userEmail = localStorage.getItem("userEmail") || "user";
@@ -108,9 +109,18 @@ function Dashboard() {
 
     const filteredNotes = useMemo(() => {
         let filtered = notes;
-        if (selectedCategory !== "All") {
+
+        if (selectedCategory === "Favorites") {
+            filtered = filtered.filter(n => n.isFavorite);
+        } else if (selectedCategory === "Today") {
+            filtered = filtered.filter(n => new Date(n.createdAt).toDateString() === new Date().toDateString());
+        } else if (selectedCategory === "This Week") {
+            const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            filtered = filtered.filter(n => new Date(n.createdAt) >= weekAgo);
+        } else if (selectedCategory !== "All") {
             filtered = filtered.filter((n) => n.category === selectedCategory);
         }
+
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
             filtered = filtered.filter(
@@ -121,6 +131,14 @@ function Dashboard() {
                     (n.tags && n.tags.some(t => t.toLowerCase().includes(q)))
             );
         }
+
+        // Advanced Tag Filtering (Concept Revision Engine)
+        if (selectedTags.length > 0) {
+            filtered = filtered.filter(n =>
+                n.tags && selectedTags.every(tag => n.tags.map(t => t.toLowerCase()).includes(tag.toLowerCase()))
+            );
+        }
+
         filtered = [...filtered].sort((a, b) => {
             switch (sortBy) {
                 case "newest": return new Date(b.createdAt) - new Date(a.createdAt);
@@ -133,18 +151,34 @@ function Dashboard() {
     }, [notes, searchQuery, selectedCategory, sortBy]);
 
     const stats = useMemo(() => {
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const startOfLastWeek = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
         const total = notes.length;
-        const today = notes.filter((n) => {
+        const beforeToday = notes.filter(n => new Date(n.createdAt) < startOfToday).length;
+
+        const thisWeekCount = notes.filter(n => new Date(n.createdAt) >= startOfWeek).length;
+        const lastWeekCount = notes.filter(n => {
             const created = new Date(n.createdAt);
-            return created.toDateString() === new Date().toDateString();
+            return created >= startOfLastWeek && created < startOfWeek;
         }).length;
-        const thisWeek = notes.filter((n) => {
-            const created = new Date(n.createdAt);
-            const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-            return created >= weekAgo;
-        }).length;
-        const favorites = notes.filter((n) => n.isFavorite).length;
-        return { total, today, thisWeek, favorites };
+
+        const totalTrend = beforeToday > 0 ? Math.round(((total - beforeToday) / beforeToday) * 100) : 0;
+        const weekTrend = lastWeekCount > 0 ? Math.round(((thisWeekCount - lastWeekCount) / lastWeekCount) * 100) : 0;
+
+        const todayCount = notes.filter(n => new Date(n.createdAt) >= startOfToday).length;
+        const favoriteCount = notes.filter(n => n.isFavorite).length;
+
+        return {
+            total,
+            today: todayCount,
+            thisWeek: thisWeekCount,
+            favorites: favoriteCount,
+            totalTrend,
+            weekTrend
+        };
     }, [notes]);
 
     const formatDate = (dateStr) => {
@@ -263,14 +297,36 @@ function Dashboard() {
     };
 
     const toggleFavorite = async (note, e) => {
+        e.preventDefault();
         e.stopPropagation();
+
+        const nextFavorite = !note.isFavorite;
+
+        // Optimistic UI update
+        setNotes((prev) => prev.map((n) => (n._id === note._id ? { ...n, isFavorite: nextFavorite } : n)));
+
         try {
-            const res = await API.put(`/notes/${note._id}`, { isFavorite: !note.isFavorite });
-            setNotes((prev) => prev.map((n) => (n._id === note._id ? res.data : n)));
+            const res = await API.put(`/notes/${note._id}`, { isFavorite: nextFavorite });
+            // Sync with server response
+            setNotes((prev) => prev.map((n) => (n._id === note._id ? { ...n, ...res.data } : n)));
         } catch (err) {
             console.error("Failed to toggle favorite:", err);
+            // Rollback on error
+            setNotes((prev) => prev.map((n) => (n._id === note._id ? { ...n, isFavorite: !nextFavorite } : n)));
         }
     };
+
+    const toggleTagFilter = (tag, e) => {
+        e?.stopPropagation();
+        const tagLower = tag.toLowerCase();
+        setSelectedTags(prev =>
+            prev.includes(tagLower)
+                ? prev.filter(t => t !== tagLower)
+                : [...prev, tagLower]
+        );
+    };
+
+    const clearAllTags = () => setSelectedTags([]);
 
     const duplicateNote = async (note, e) => {
         e.stopPropagation();
@@ -331,22 +387,34 @@ function Dashboard() {
                     <nav className="sidebar-nav">
                         <div className="nav-section">
                             <span className="nav-label">Menu</span>
-                            <button className="nav-item active">
+                            <button
+                                className={`nav-item ${selectedCategory === "All" ? "active" : ""}`}
+                                onClick={() => setSelectedCategory("All")}
+                            >
                                 <HiOutlineViewGrid className="nav-icon" />
                                 <span className="nav-text">All Notes</span>
                                 <span className="nav-badge">{stats.total}</span>
                             </button>
-                            <button className="nav-item">
+                            <button
+                                className={`nav-item ${selectedCategory === "Today" ? "active" : ""}`}
+                                onClick={() => setSelectedCategory("Today")}
+                            >
                                 <HiOutlineSparkles className="nav-icon" />
                                 <span className="nav-text">Today</span>
                                 <span className="nav-badge">{stats.today}</span>
                             </button>
-                            <button className="nav-item">
+                            <button
+                                className={`nav-item ${selectedCategory === "This Week" ? "active" : ""}`}
+                                onClick={() => setSelectedCategory("This Week")}
+                            >
                                 <HiOutlineClock className="nav-icon" />
                                 <span className="nav-text">This Week</span>
                                 <span className="nav-badge">{stats.thisWeek}</span>
                             </button>
-                            <button className="nav-item">
+                            <button
+                                className={`nav-item ${selectedCategory === "Favorites" ? "active" : ""}`}
+                                onClick={() => setSelectedCategory("Favorites")}
+                            >
                                 <HiOutlineHeart className="nav-icon" />
                                 <span className="nav-text">Favorites</span>
                                 <span className="nav-badge">{stats.favorites}</span>
@@ -422,14 +490,16 @@ function Dashboard() {
                         <div className="stat-card">
                             <div className="stat-header">
                                 <span className="stat-label">Total Notes 📚</span>
-                                <span className="stat-trend">
-                                    <HiOutlineTrendingUp />
-                                    +12%
-                                </span>
+                                {stats.totalTrend !== 0 && (
+                                    <span className={`stat-trend ${stats.totalTrend > 0 ? "up" : "down"}`}>
+                                        {stats.totalTrend > 0 ? <HiOutlineTrendingUp /> : <HiOutlineTrendingUp style={{ transform: 'rotate(180deg)' }} />}
+                                        {stats.totalTrend > 0 ? `+${stats.totalTrend}%` : `${stats.totalTrend}%`}
+                                    </span>
+                                )}
                             </div>
                             <div className="stat-value">{stats.total}</div>
                             <div className="stat-bar">
-                                <div className="stat-progress" style={{ width: `${Math.min(stats.total * 10, 100)}%` }}></div>
+                                <div className="stat-progress" style={{ width: `${Math.min(stats.total * 5, 100)}%` }}></div>
                             </div>
                         </div>
 
@@ -445,8 +515,14 @@ function Dashboard() {
                         <div className="stat-card">
                             <div className="stat-header">
                                 <span className="stat-label">This Week 💫</span>
+                                {stats.weekTrend !== 0 && (
+                                    <span className={`stat-trend ${stats.weekTrend > 0 ? "up" : "down"}`}>
+                                        {stats.weekTrend > 0 ? <HiOutlineTrendingUp /> : <HiOutlineTrendingUp style={{ transform: 'rotate(180deg)' }} />}
+                                        {stats.weekTrend > 0 ? `+${stats.weekTrend}%` : `${stats.weekTrend}%`}
+                                    </span>
+                                )}
                             </div>
-                            <div className="stat-value">{stats.today}</div>
+                            <div className="stat-value">{stats.thisWeek}</div>
                             <div className="stat-subtext">Keep the momentum!</div>
                         </div>
 
@@ -506,6 +582,31 @@ function Dashboard() {
                         </div>
                     </div>
                 </section>
+
+                {/* Selected Tags Bar */}
+                {selectedTags.length > 0 && (
+                    <section className="selected-tags-bar">
+                        <div className="tags-label">
+                            <HiOutlineFilter />
+                            <span>Active Filters:</span>
+                        </div>
+                        <div className="active-tags">
+                            {selectedTags.map(tag => (
+                                <button
+                                    key={tag}
+                                    className="active-tag-pill"
+                                    onClick={() => toggleTagFilter(tag)}
+                                >
+                                    <span>{tag}</span>
+                                    <HiOutlineX />
+                                </button>
+                            ))}
+                            <button className="clear-tags-btn" onClick={clearAllTags}>
+                                Clear All
+                            </button>
+                        </div>
+                    </section>
+                )}
 
                 {/* Notes */}
                 <section className="notes-content">
@@ -586,7 +687,12 @@ function Dashboard() {
                                     {note.tags?.length > 0 && (
                                         <div className="note-tags">
                                             {note.tags.slice(0, 3).map((tag, i) => (
-                                                <span key={i} className="tag">
+                                                <span
+                                                    key={i}
+                                                    className={`tag clickable ${selectedTags.includes(tag.toLowerCase()) ? 'active' : ''}`}
+                                                    onClick={(e) => toggleTagFilter(tag, e)}
+                                                    title={`Filter by ${tag}`}
+                                                >
                                                     <HiOutlineTag />
                                                     {tag}
                                                 </span>

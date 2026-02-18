@@ -43,23 +43,30 @@ const noteSchema = new mongoose.Schema(
                 type: String,
             },
         ],
-attachments: [
-  {
-    url: {
-      type: String,
-      required: true,
-    },
-    public_id: {
-      type: String,
-      required: true,
-    },
-    type: {
-      type: String,
-      enum: ["image", "pdf"],
-    },
-  },
-],
-
+        attachments: [
+            {
+                url: {
+                    type: String,
+                    required: true,
+                },
+                public_id: {
+                    type: String,
+                    required: true,
+                },
+                type: {
+                    type: String,
+                    enum: ["image", "pdf"],
+                },
+            },
+        ],
+        isFavorite: {
+            type: Boolean,
+            default: false,
+        },
+        color: {
+            type: String,
+            default: "default",
+        },
     },
     {
         timestamps: true,

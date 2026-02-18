@@ -72,5 +72,14 @@ const login = asyncHandler(async (req, res) => {
     });
 });
 
-export { signup, login };
+const googleAuthCallback = asyncHandler(async (req, res) => {
+    // req.user is populated by passport
+    const token = generateToken(req.user._id);
+
+    // Redirect to client with token
+    const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+    res.redirect(`${clientUrl}/login?token=${token}&email=${req.user.email}`);
+});
+
+export { signup, login, googleAuthCallback };
 

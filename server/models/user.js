@@ -14,9 +14,21 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
-      required: true,
+      required: false,
       minlength: 6,
       maxlength: 128,
+    },
+
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
+    githubId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
   },
   {
@@ -24,6 +36,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-const User = mongoose.model("User" , userSchema); // create user model
+const User = mongoose.model("User", userSchema); // create user model
 
 export default User; // export user model
