@@ -630,10 +630,10 @@ function Dashboard() {
                                 <div
                                     key={note._id}
                                     className="note-card"
+                                    data-color={note.color || "default"}
                                     style={{
                                         animationDelay: `${index * 0.05}s`,
                                         backgroundColor: NOTE_COLORS.find(c => c.id === (note.color || "default"))?.bg,
-                                        borderColor: NOTE_COLORS.find(c => c.id === (note.color || "default"))?.border
                                     }}
                                     onMouseEnter={() => setHoveredNote(note._id)}
                                     onMouseLeave={() => setHoveredNote(null)}
@@ -705,6 +705,10 @@ function Dashboard() {
                                         <div className="note-date">
                                             <HiOutlineClock />
                                             <span>{formatDate(note.createdAt)}</span>
+                                            <span className="note-reading-time">
+                                                <HiOutlineDocumentText />
+                                                {Math.max(1, Math.ceil(note.content.split(/\s+/).length / 200))} min read
+                                            </span>
                                         </div>
                                         <div className={`note-actions ${hoveredNote === note._id ? "visible" : ""}`}>
                                             <button onClick={(e) => openEditNote(note, e)} title="Edit">
