@@ -8,10 +8,6 @@ import asyncHandler from "express-async-handler";
 const signup = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-        res.status(400);
-        throw new Error("All fields are required");
-    }
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
@@ -36,11 +32,6 @@ const signup = asyncHandler(async (req, res) => {
 
 const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-        res.status(400);
-        throw new Error("All Fields are required");
-    }
 
     //find user
 

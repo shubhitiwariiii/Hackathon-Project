@@ -9,11 +9,6 @@ import streamifier from "streamifier";
 const createNote = asyncHandler(async (req, res) => {
   const { title, content, category, topic, difficulty, tags, isFavorite, color } = req.body;
 
-  if (!title || !content) {
-    res.status(400);
-    throw new Error("All fields are required");
-  }
-
   const note = await Note.create({
     title,
     content,
